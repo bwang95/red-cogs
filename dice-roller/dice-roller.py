@@ -2,6 +2,7 @@ import discord
 import re
 from discord.ext import commands
 from random import randint
+from functools import reduce
 
 class DiceRoller:
     """D&D Dice Roller!"""
@@ -33,28 +34,43 @@ class DiceRoller:
 
             # Vet formatting
             if length > 2:
-                await self.bot.say("{} looks like {} isn't formatted right...".format(author.mention, die))
+                await self.bot.say("{} looks like {} isn't formatted right...".format(ctx.message.author.mention, die))
                 return
 
             # If the length of the array is one, just add the number
             if length == 1:
-                rolls.append(components[0])
+                rolls.append([components[0]])
             # Otherwise, roll the dice
             else:
-                rolls.append(randint(1, components[1]))
+                results = []
+                for _ in range(0, components[0]):
+                    results.append(randint(1, components[1]))
+                rolls.append(results)
 
-        # Compose the result
-        result = "{} ".format(rolls[0])
-        total = rolls[0]
+        # Compose the first dice
+        result = ''
+        if len(rolls[0]) == 1:
+            result = str(rolls[0][0]) + ' '
+        else:
+            result = "({}) ".format(reduce(lambda l, r: "{} + {}".format(l, r), rolls[0]))
+        total = reduce(lambda l, r: l + r, rolls[0])
+
+        # Compose the rest of the dice
         for (index, roll) in enumerate(rolls[1:]):
+            roll_total = reduce(lambda l, r: l + r, roll)
             operator = order_of_operators[index]
             if operator == '+':
-                total += roll
+                total += roll_total
             elif operator == '-':
-                total -= roll
-            result += "{} {}".format(operator, roll)
-        result += " {}".format(rolls[-1])
+                total -= roll_total
+            if len(roll) == 1:
+                roll_result = str(roll[0])
+            else:
+                roll_result = "({})".format(reduce(lambda l, r: "{} + {}".format(l, r), roll))
+            result += "{} {}".format(operator, roll_result)
         await self.bot.say("{} {} = {}".format(ctx.message.author.mention, result, total))
+
+
 
 def setup(bot):
     bot.add_cog(DiceRoller(bot))
