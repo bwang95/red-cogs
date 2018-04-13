@@ -20,6 +20,9 @@ class DiceRoller:
 
         """
         sanitized_string = re.sub('[^0-9d\+\-]', '', dice.lower())
+        if len(sanitized_string) == 0:
+            await self.bot.say("{} that doesn't look like valid input.".format(ctx.message.author.mention))
+            return
         order_of_operators = re.sub('[^\+\-]', '', sanitized_string)
         dice = re.split('[\+\-]', sanitized_string)
         rolls = []
